@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Escribe una nota musical y escúchala al instante.">
+    <title>Reproductor de notas musicales</title>
+    <style>
+        /* Estilos básicos y sencillos */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .tool {
+            max-width: 700px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        a.back {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        a.back:hover {
+            text-decoration: underline;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            color: #222;
+        }
+
+        p.description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .entry-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+            padding: 8px 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 8px 15px;
+            font-size: 14px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .play-button {
+            background-color: #28a745;
+        }
+
+        .play-button:hover {
+            background-color: #218838;
+        }
+
+        .stop-button {
+            background-color: #dc3545;
+        }
+
+        .stop-button:hover {
+            background-color: #c82333;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #eef2f5;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .note-display {
+            font-size: 32px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .frequency {
+            font-size: 14px;
+            color: #555;
+            margin-top: 5px;
+        }
+
+        .frequency.error {
+            color: #d9534f;
+            font-weight: bold;
+        }
+
+        .score-section {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+
+        .score-section h2 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .score-wrap {
+            overflow-x: auto;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            margin-top: 10px;
+        }
+
+        #score {
+            display: block;
+            min-width: 560px;
+            height: auto;
+        }
+
+        /* Estilos del SVG de la partitura */
+        .staff-line { stroke: #333; stroke-width: 1; }
+        .staff-note { fill: #000; }
+        .staff-stem { stroke: #000; stroke-width: 1.5; }
+        .staff-ledger { stroke: #000; stroke-width: 1; }
+        .staff-label { fill: #555; font-family: Arial, sans-serif; font-size: 12px; }
+        .staff-clef { fill: #333; font-family: serif; font-size: 60px; }
+        .staff-accidental { fill: #d9534f; font-family: serif; font-size: 20px; }
+        .score-placeholder { fill: #777; font-family: Arial, sans-serif; font-size: 14px; }
+
+        .export-section {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .export-section button {
+            background-color: #6c757d;
+        }
+
+        .export-section button:hover {
+            background-color: #5a6268;
+        }
+
+        .export-status {
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .export-status.error {
+            color: #d9534f;
+        }
+
+        .video-preview {
+            width: 100%;
+            margin-top: 10px;
+            background-color: #000;
+        }
+
+        #record-stage {
+            position: fixed;
+            left: -10000px;
+            top: 0;
+            width: 960px;
+            height: 540px;
+        }
+    </style>
+</head>
+<body>
+    <main class="tool">
+        <a class="back" href="INDEX.HTML">&larr; Volver a la Novena</a>
+        
+        <section class="panel">
+            <h1>Escucha una nota</h1>
+            <p class="description">Escribe una nota o una secuencia para escucharla como melodía. Puedes separar las notas con espacios, comas o guiones.</p>
+
+            <div id="note-form">
+                <label for="note-input">Notas musicales:</label>
+                <div class="entry-row">
+                    <input id="note-input" name="note" type="text" value="Si4 - Si4 - Do5 - Re5 - Re5 - Do5 - Si4 - La4" placeholder="Do4 - Re4 - Mi4" autocomplete="off" spellcheck="false">
+                    <button class="play-button" id="play-button" type="button">▶ Reproducir</button>
+                    <button class="stop-button" id="stop-button" type="button" disabled>Detener</button>
+                </div>
+                <p class="hint" id="note-hint">Ejemplo: Si - Si - Do' - Re'. Usa Do, Re, Mi, Fa, Sol, La, Si o C, D, E, F, G, A, B; añade # o b.</p>
+            </div>
+
+            <div class="result">
+                <div class="note-display" id="note-display">♫</div>
+                <p class="frequency" id="note-status">Pulsa Reproducir para escuchar la melodía</p>
+            </div>
+
+            <section class="score-section">
+                <h2>Partitura de las notas</h2>
+                <p style="font-size: 13px; color: #666;">Pentagrama en clave de sol.</p>
+                
+                <div class="score-wrap">
+                    <svg id="score" viewBox="0 0 720 190" xmlns="http://www.w3.org/2000/svg"></svg>
+                </div>
+
+                <div class="export-section">
+                    <button id="pdf-button" type="button">Descargar PDF</button>
+                    <button id="blz-button" type="button">Descargar .blz</button>
+                    <button id="mp4-button" type="button">Generar Video MP4</button>
+                </div>
+                <p class="export-status" id="export-status">Para el MP4, inicia el servicio local con <code>/usr/bin/python3 PROGRAMA/export_server.py</code>.</p>
+                <video class="video-preview" id="video-preview" controls hidden></video>
+            </section>
+        </section>
+    </main>
+
+    <canvas id="record-stage" width="960" height="540" aria-hidden="true"></canvas>
+
+    <script>
+        const noteInput = document.querySelector("#note-input");
+        const noteDisplay = document.querySelector("#note-display");
+        const noteStatus = document.querySelector("#note-status");
+        const playButton = document.querySelector("#play-button");
+        const stopButton = document.querySelector("#stop-button");
+        const score = document.querySelector("#score");
+        const scoreWrap = document.querySelector(".score-wrap");
+        const pdfButton = document.querySelector("#pdf-button");
+        const blzButton = document.querySelector("#blz-button");
+        const mp4Button = document.querySelector("#mp4-button");
+        const exportStatus = document.querySelector("#export-status");
+        const videoPreview = document.querySelector("#video-preview");
+        const recordStage = document.querySelector("#record-stage");
+
+        const pitchClasses = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 };
+        const spanishNotes = { do: "c", re: "d", mi: "e", fa: "f", sol: "g", la: "a", si: "b" };
+        const noteNumbers = { c: 0, d: 1, e: 2, f: 3, g: 4, a: 5, b: 6 };
+        
+        let audioContext;
+        let activeOscillators = [];
+        let playbackTimers = [];
+        let playbackId = 0;
+        let audioRecorderDestination;
+
+        function parseNote(value) {
+            const match = value.trim().match(/^(do|re|mi|fa|sol|la|si|[a-g])([#b♯♭]?)([0-8]?)(['’′]*)$/i);
+            if (!match) return null;
+
+            const letter = spanishNotes[match[1].toLowerCase()] || match[1].toLowerCase();
+            let semitone = pitchClasses[letter];
+            if (match[2] === "#" || match[2] === "♯") semitone += 1;
+            if (match[2] === "b" || match[2] === "♭") semitone -= 1;
+
+            const octave = match[3] === "" ? 4 + match[4].length : Number(match[3]) + match[4].length;
+            const midi = (octave + 1) * 12 + semitone;
+            if (midi < 12 || midi > 119) return null;
+
+            return { midi, frequency: 440 * 2 ** ((midi - 69) / 12), letter, semitone };
+        }
+
+        function renderScore(notes) {
+            const lineGap = 12;
+            const stepGap = lineGap / 2;
+            const firstX = 112;
+            const noteGap = 62;
+            const width = Math.max(560, scoreWrap.clientWidth, firstX + notes.length * noteGap + 36);
+            let lineStart = 86;
+            let height = 190;
+            const svgParts = [`<title>Partitura en clave de sol</title>`];
+
+            if (notes.length === 0) {
+                const staffBottom = lineStart + lineGap * 4;
+                svgParts.push(`<text class="staff-clef" x="22" y="${staffBottom + 10}">𝄞</text>`);
+                for (let line = 0; line < 5; line += 1) {
+                    const y = lineStart + line * lineGap;
+                    svgParts.push(`<line class="staff-line" x1="78" y1="${y}" x2="${width - 20}" y2="${y}"/>`);
+                }
+                svgParts.push(`<text class="score-placeholder" x="${firstX}" y="${lineStart + 40}">Ingresa notas para ver la partitura</text>`);
+            } else {
+                const positions = notes.map(({ parsed }) => {
+                    const octave = Math.floor(parsed.midi / 12) - 1;
+                    return octave * 7 + noteNumbers[parsed.letter];
+                });
+                const lowestPosition = Math.min(...positions);
+                const highestPosition = Math.max(...positions);
+                const staffBottom = lineStart + lineGap * 4;
+                const topNoteY = staffBottom - (highestPosition - 30) * stepGap;
+                const bottomNoteY = staffBottom - (lowestPosition - 30) * stepGap;
+                const shift = 28 - topNoteY;
+                lineStart += shift;
+                const shiftedStaffBottom = lineStart + lineGap * 4;
+                height = Math.max(190, bottomNoteY + shift + 48);
+                
+                svgParts.push(`<text class="staff-clef" x="22" y="${shiftedStaffBottom + 10}">𝄞</text>`);
+                for (let line = 0; line < 5; line += 1) {
+                    const y = lineStart + line * lineGap;
+                    svgParts.push(`<line class="staff-line" x1="78" y1="${y}" x2="${width - 20}" y2="${y}"/>`);
+                }
+
+                notes.forEach(({ token, parsed }, index) => {
+                    const octave = Math.floor(parsed.midi / 12) - 1;
+                    const diatonicPosition = octave * 7 + noteNumbers[parsed.letter];
+                    const y = shiftedStaffBottom - (diatonicPosition - 30) * stepGap;
+                    const x = firstX + index * noteGap;
+                    const accidental = parsed.semitone - pitchClasses[parsed.letter];
+
+                    for (let ledgerY = shiftedStaffBottom + lineGap; ledgerY <= y - 4; ledgerY += lineGap) {
+                        svgParts.push(`<line class="staff-ledger" x1="${x - 11}" y1="${ledgerY}" x2="${x + 11}" y2="${ledgerY}"/>`);
+                    }
+                    for (let ledgerY = lineStart - lineGap; ledgerY >= y + 4; ledgerY -= lineGap) {
+                        svgParts.push(`<line class="staff-ledger" x1="${x - 11}" y1="${ledgerY}" x2="${x + 11}" y2="${ledgerY}"/>`);
+                    }
+                    if (accidental !== 0) {
+                        const accidentalText = accidental > 0 ? "♯" : "♭";
+                        svgParts.push(`<text class="staff-accidental" x="${x - 23}" y="${y + 7}">${accidentalText}</text>`);
+                    }
+                    svgParts.push(`<ellipse class="staff-note" cx="${x}" cy="${y}" rx="9" ry="6" transform="rotate(-20 ${x} ${y})"/>`);
+                    svgParts.push(`<line class="staff-stem" x1="${x + 8}" y1="${y}" x2="${x + 8}" y2="${y - 34}"/>`);
+                    svgParts.push(`<text class="staff-label" text-anchor="middle" x="${x}" y="${shiftedStaffBottom + 34}">${token}</text>`);
+                });
+            }
+
+            score.setAttribute("viewBox", `0 0 ${width} ${height}`);
+            score.style.width = `${width}px`;
+            score.innerHTML = svgParts.join("");
+        }
+
+        function getCurrentNotes() {
+            const tokens = noteInput.value.trim().split(/[\s,，;；\-–]+/).filter(Boolean);
+            const notes = tokens.map((token) => ({ token, parsed: parseNote(token) }));
+            if (notes.length === 0 || notes.some(({ parsed }) => !parsed)) {
+                throw new Error("Escribe notas válidas antes de exportar.");
+            }
+            return notes;
+        }
+
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = filename;
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        function exportPdf() {
+            const notes = getCurrentNotes();
+            const pageWidth = 595;
+            const pageHeight = 842;
+            const notesPerPage = 14;
+            const pageCount = Math.ceil(notes.length / notesPerPage);
+            const objects = [];
+            const addObject = (value) => {
+                objects.push(value);
+                return objects.length;
+            };
+            const catalogId = addObject("");
+            const pagesId = addObject("");
+            const fontId = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+            const pageIds = [];
+
+            function pdfText(text, x, y, size, color = "0 0 0") {
+                const safeText = text.replace(/[’′]/g, "'").replace(/♯/g, "#").replace(/♭/g, "b").replace(/[^\x20-\x7E]/g, "?").replace(/[\\()]/g, "\\$&");
+                return `BT /F1 ${size} Tf ${color} rg ${x} ${y} Td (${safeText}) Tj ET\n`;
+            }
+
+            for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+                const pageNotes = notes.slice(pageIndex * notesPerPage, (pageIndex + 1) * notesPerPage);
+                const staffTop = 480;
+                const staffGap = 9;
+                const staffBottom = staffTop + staffGap * 4;
+                const firstX = 82;
+                const noteGap = 34;
+                let content = pdfText("Partitura musical", 55, 785, 22);
+                content += pdfText(`Notas: pagina ${pageIndex + 1} de ${pageCount}`, 55, 762, 10, "0.4 0.4 0.4");
+                content += pdfText("Clave de sol", 55, 710, 10);
+
+                for (let line = 0; line < 5; line += 1) {
+                    const y = staffTop + line * staffGap;
+                    content += `0 0 0 RG 0.8 w 55 ${y} m 540 ${y} l S\n`;
+                }
+
+                pageNotes.forEach(({ token, parsed }, noteIndex) => {
+                    const octave = Math.floor(parsed.midi / 12) - 1;
+                    const position = octave * 7 + noteNumbers[parsed.letter];
+                    const y = staffBottom + (position - 30) * (staffGap / 2);
+                    const x = firstX + noteIndex * noteGap;
+                    const accidental = parsed.semitone - pitchClasses[parsed.letter];
+                    
+                    for (let ledgerY = staffBottom - staffGap; ledgerY >= y + 3; ledgerY -= staffGap) {
+                        content += `0 0 0 RG 0.7 w ${x - 7} ${ledgerY} m ${x + 7} ${ledgerY} l S\n`;
+                    }
+                    for (let ledgerY = staffTop + staffGap; ledgerY <= y - 3; ledgerY += staffGap) {
+                        content += `0 0 0 RG 0.7 w ${x - 7} ${ledgerY} m ${x + 7} ${ledgerY} l S\n`;
+                    }
+                    if (accidental !== 0) content += pdfText(accidental > 0 ? "#" : "b", x - 13, y - 3, 12, "0.8 0 0");
+                    content += `${x - 6} ${y} m ${x - 6} ${y + 3} ${x - 3} ${y + 6} ${x} ${y + 6} c ${x + 3} ${y + 6} ${x + 6} ${y + 3} ${x + 6} ${y} c ${x + 6} ${y - 3} ${x + 3} ${y - 6} ${x} ${y - 6} c ${x - 3} ${y - 6} ${x - 6} ${y - 3} ${x - 6} ${y} c f\n`;
+                    content += `0 0 0 RG 1 w ${x + 5} ${y} m ${x + 5} ${y + 29} l S\n`;
+                    content += pdfText(token, x - 12, 424, 8, "0.3 0.3 0.3");
+                });
+
+                content += pdfText("Partitura generada en el reproductor musical", 55, 42, 9, "0.5 0.5 0.5");
+                const streamId = addObject(`<< /Length ${content.length} >>\nstream\n${content}endstream`);
+                pageIds.push(addObject(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${streamId} 0 R >>`));
+            }
+
+            objects[catalogId - 1] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
+            objects[pagesId - 1] = `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageIds.length} >>`;
+            let documentText = "%PDF-1.4\n";
+            const offsets = [0];
+            objects.forEach((object, index) => {
+                offsets.push(documentText.length);
+                documentText += `${index + 1} 0 obj\n${object}\nendobj\n`;
+            });
+            const xrefOffset = documentText.length;
+            documentText += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+            offsets.slice(1).forEach((offset) => {
+                documentText += `${String(offset).padStart(10, "0")} 00000 n \n`;
+            });
+            documentText += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+            downloadBlob(new Blob([documentText], { type: "application/pdf" }), "partitura-musical.pdf");
+        }
+
+        function exportBlz() {
+            const notes = getCurrentNotes();
+            const noteNames = { c: "Do", d: "Re", e: "Mi", f: "Fa", g: "Sol", a: "La", b: "Si" };
+            const text = notes.map(({ parsed }) => {
+                const accidental = parsed.semitone - pitchClasses[parsed.letter];
+                const suffix = accidental > 0 ? "#" : accidental < 0 ? "b" : "";
+                return `${noteNames[parsed.letter]}${suffix}`;
+            }).join("\n");
+            downloadBlob(new Blob([text], { type: "text/plain;charset=utf-8" }), "notas-musicales.blz");
+        }
+
+        function drawRecordingFrame(notes, activeIndex, elapsedSeconds) {
+            const context = recordStage.getContext("2d");
+            const width = recordStage.width;
+            const height = recordStage.height;
+            context.fillStyle = "#ffffff";
+            context.fillRect(0, 0, width, height);
+            context.fillStyle = "#000000";
+            context.font = "bold 16px Arial";
+            context.fillText("PARTITURA MUSICAL", 70, 65);
+            context.font = "32px Arial";
+            context.fillText("Notas musicales", 70, 110);
+
+            const staffLeft = 100;
+            const staffRight = width - 70;
+            const staffTop = 230;
+            const staffGap = 24;
+            context.strokeStyle = "#000000";
+            context.lineWidth = 1;
+            for (let line = 0; line < 5; line += 1) {
+                const y = staffTop + line * staffGap;
+                context.beginPath();
+                context.moveTo(staffLeft, y);
+                context.lineTo(staffRight, y);
+                context.stroke();
+            }
+            context.font = "80px serif";
+            context.fillText("𝄞", 38, staffTop + staffGap * 4 + 10);
+
+            const visibleCount = 12;
+            const firstVisible = Math.max(0, Math.min(activeIndex - Math.floor(visibleCount / 2), notes.length - visibleCount));
+            const visibleNotes = notes.slice(firstVisible, firstVisible + visibleCount);
+            const noteXGap = (staffRight - staffLeft - 70) / Math.max(1, visibleNotes.length - 1);
+            
+            visibleNotes.forEach(({ token, parsed }, localIndex) => {
+                const globalIndex = firstVisible + localIndex;
+                const x = staffLeft + 60 + localIndex * noteXGap;
+                const octave = Math.floor(parsed.midi / 12) - 1;
+                const position = octave * 7 + noteNumbers[parsed.letter];
+                const y = staffTop + staffGap * 4 - (position - 30) * (staffGap / 2);
+                
+                if (globalIndex === activeIndex) {
+                    context.fillStyle = "#aadaff";
+                    context.beginPath();
+                    context.arc(x, y, 20, 0, Math.PI * 2);
+                    context.fill();
+                }
+                context.fillStyle = "#000000";
+                context.beginPath();
+                context.ellipse(x, y, 12, 8, -0.3, 0, Math.PI * 2);
+                context.fill();
+                context.strokeStyle = "#000000";
+                context.lineWidth = 2;
+                context.beginPath();
+                context.moveTo(x + 10, y);
+                context.lineTo(x + 10, y - 45);
+                context.stroke();
+                context.font = "14px Arial";
+                context.fillStyle = "#333333";
+                context.textAlign = "center";
+                context.fillText(token, x, staffTop + staffGap * 4 + 50);
+            });
+
+            context.textAlign = "left";
+            context.fillStyle = "#007bff";
+            context.font = "bold 48px Arial";
+            context.fillText(notes[activeIndex]?.token || "♫", 70, 440);
+            context.fillStyle = "#666666";
+            context.font = "18px Arial";
+            context.fillText(`${Math.min(activeIndex + 1, notes.length)} / ${notes.length} notas`, 70, 480);
+            context.fillText(`Tiempo: ${elapsedSeconds.toFixed(1)} s`, 70, 510);
+        }
+
+        function recordMelody(notes) {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    if (!window.MediaRecorder || !recordStage.captureStream) {
+                        throw new Error("Este navegador no permite grabar la partitura.");
+                    }
+                    const supportedMime = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"]
+                        .find((mime) => MediaRecorder.isTypeSupported(mime));
+                    if (!supportedMime) throw new Error("No hay un formato de grabación compatible en este navegador.");
+
+                    audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+                    if (!audioRecorderDestination) audioRecorderDestination = audioContext.createMediaStreamDestination();
+                    if (audioContext.state !== "running") await audioContext.resume();
+                    
+                    const canvasStream = recordStage.captureStream(30);
+                    const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...audioRecorderDestination.stream.getAudioTracks()]);
+                    const recorder = new MediaRecorder(combinedStream, { mimeType: supportedMime });
+                    const chunks = [];
+                    const noteLength = 0.62;
+                    const beatLength = 0.72;
+                    let activeIndex = 0;
+                    const startTime = performance.now();
+                    
+                    const animationId = setInterval(() => {
+                        activeIndex = Math.min(notes.length - 1, Math.floor((performance.now() - startTime) / (beatLength * 1000)));
+                        drawRecordingFrame(notes, activeIndex, (performance.now() - startTime) / 1000);
+                    }, 100);
+
+                    recorder.addEventListener("dataavailable", (event) => {
+                        if (event.data.size) chunks.push(event.data);
+                    });
+                    recorder.addEventListener("error", () => {
+                        clearInterval(animationId);
+                        reject(new Error("El navegador no pudo grabar el video."));
+                    }, { once: true });
+                    recorder.addEventListener("stop", () => {
+                        clearInterval(animationId);
+                        canvasStream.getTracks().forEach((track) => track.stop());
+                        resolve(new Blob(chunks, { type: supportedMime }));
+                    }, { once: true });
+
+                    drawRecordingFrame(notes, 0, 0);
+                    recorder.start(250);
+                    const startedAt = audioContext.currentTime + 0.2;
+                    notes.forEach(({ parsed }, index) => {
+                        const noteStart = startedAt + index * beatLength;
+                        const oscillator = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+                        oscillator.type = "triangle";
+                        oscillator.frequency.setValueAtTime(parsed.frequency, noteStart);
+                        gain.gain.setValueAtTime(0.0001, noteStart);
+                        gain.gain.exponentialRampToValueAtTime(0.35, noteStart + 0.025);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + noteLength);
+                        oscillator.connect(gain);
+                        gain.connect(audioContext.destination);
+                        gain.connect(audioRecorderDestination);
+                        oscillator.start(noteStart);
+                        oscillator.stop(noteStart + noteLength + 0.02);
+                    });
+                    setTimeout(() => recorder.stop(), (notes.length * beatLength + 0.5) * 1000);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        function stopPlayback() {
+            playbackId += 1;
+            playbackTimers.forEach(clearTimeout);
+            playbackTimers = [];
+            activeOscillators.forEach((oscillator) => {
+                try { oscillator.stop(); } catch {}
+            });
+            activeOscillators = [];
+            stopButton.disabled = true;
+        }
+
+        async function playNotes() {
+            const tokens = noteInput.value.trim().split(/[\s,，;；\-–]+/).filter(Boolean);
+            const notes = tokens.map((token) => ({ token, parsed: parseNote(token) }));
+            const invalidNote = notes.find((note) => !note.parsed);
+
+            if (tokens.length === 0 || invalidNote) {
+                renderScore([]);
+                noteStatus.textContent = invalidNote
+                    ? `No reconozco «${invalidNote.token}». Revisa la secuencia, por ejemplo: Do4 - Re4 - Mi4.`
+                    : "Escribe al menos una nota, por example: Do4 - Re4 - Mi4.";
+                noteStatus.classList.add("error");
+                return;
+            }
+
+            stopPlayback();
+            noteStatus.classList.remove("error");
+            renderScore(notes);
+            noteDisplay.textContent = notes.map(({ token }) => token).join(" · ");
+            noteStatus.textContent = `Preparando ${notes.length} ${notes.length === 1 ? "nota" : "notas"}...`;
+            stopButton.disabled = false;
+
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) throw new Error("Este navegador no permite generar audio.");
+                audioContext ||= new AudioContextClass();
+                if (audioContext.state !== "running") await audioContext.resume();
+
+                const currentPlayback = playbackId;
+                const noteLength = 0.34;
+                const beatLength = 0.42;
+                
+                notes.forEach(({ token, parsed }, index) => {
+                    playbackTimers.push(setTimeout(() => {
+                        if (playbackId !== currentPlayback) return;
+                        try {
+                            const oscillator = audioContext.createOscillator();
+                            const gain = audioContext.createGain();
+                            const now = audioContext.currentTime;
+                            oscillator.type = "triangle";
+                            oscillator.frequency.setValueAtTime(parsed.frequency, now);
+                            gain.gain.setValueAtTime(0.0001, now);
+                            gain.gain.exponentialRampToValueAtTime(0.35, now + 0.025);
+                            gain.gain.exponentialRampToValueAtTime(0.0001, now + noteLength);
+                            oscillator.connect(gain);
+                            gain.connect(audioContext.destination);
+                            oscillator.start(now);
+                            oscillator.stop(now + noteLength + 0.02);
+                            activeOscillators.push(oscillator);
+                            
+                            oscillator.addEventListener("ended", () => {
+                                activeOscillators = activeOscillators.filter((item) => item !== oscillator);
+                                oscillator.disconnect();
+                                gain.disconnect();
+                            }, { once: true });
+
+                            noteDisplay.textContent = token;
+                            noteStatus.textContent = `Reproduciendo: ${token} (${parsed.frequency.toFixed(1)} Hz)`;
+                        } catch {}
+                    }, index * beatLength * 1000));
+                });
+
+                playbackTimers.push(setTimeout(() => {
+                    if (playbackId !== currentPlayback) return;
+                    noteDisplay.textContent = "♫";
+                    noteStatus.textContent = "Reproducción finalizada.";
+                    stopButton.disabled = true;
+                }, notes.length * beatLength * 1000));
+            } catch (error) {
+                noteStatus.textContent = error.message || "Ocurrió un error al reproducir el audio.";
+                noteStatus.classList.add("error");
+                stopButton.disabled = true;
+            }
+        }
+
+        // Event Listeners
+        playButton.addEventListener("click", playNotes);
+        stopButton.addEventListener("click", () => {
+            stopPlayback();
+            noteDisplay.textContent = "♫";
+            noteStatus.textContent = "Reproducción detenida.";
+        });
+
+        pdfButton.addEventListener("click", () => {
+            try {
+                exportStatus.classList.remove("error");
+                exportPdf();
+                exportStatus.textContent = "Se generó la partitura en PDF correctamente.";
+            } catch (error) {
+                exportStatus.textContent = error.message;
+                exportStatus.classList.add("error");
+            }
+        });
+
+        blzButton.addEventListener("click", () => {
+            try {
+                exportStatus.classList.remove("error");
+                exportBlz();
+                exportStatus.textContent = "Se descargaron las notas en formato .blz.";
+            } catch (error) {
+                exportStatus.textContent = error.message;
+                exportStatus.classList.add("error");
+            }
+        });
+
+        mp4Button.addEventListener("click", async () => {
+            try {
+                const notes = getCurrentNotes();
+                mp4Button.disabled = true;
+                exportStatus.classList.remove("error");
+                exportStatus.textContent = "Generando video... Espera un momento.";
+                
+                const webmBlob = await recordMelody(notes);
+                const formData = new FormData();
+                formData.append("video", webmBlob, "partitura.webm");
+                
+                const response = await fetch("http://localhost:8080/convert", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error("No se pudo conectar con el servidor de conversión MP4.");
+                }
+
+                const mp4Blob = await response.blob();
+                const videoUrl = URL.createObjectURL(mp4Blob);
+                videoPreview.src = videoUrl;
+                videoPreview.hidden = false;
+                downloadBlob(mp4Blob, "partitura-musical.mp4");
+                exportStatus.textContent = "Video MP4 generado con éxito.";
+            } catch (error) {
+                exportStatus.textContent = error.message || "Error al generar el MP4.";
+                exportStatus.classList.add("error");
+            } finally {
+                mp4Button.disabled = false;
+            }
+        });
+
+        // Dibujar partitura inicial si hay notas en el input
+        try {
+            const initialTokens = noteInput.value.trim().split(/[\s,，;；\-–]+/).filter(Boolean);
+            const initialNotes = initialTokens.map((token) => ({ token, parsed: parseNote(token) }));
+            if (!initialNotes.some(({ parsed }) => !parsed)) renderScore(initialNotes);
+        } catch {}
+    </script>
+</body>
+</html>

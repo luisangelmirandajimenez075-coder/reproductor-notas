@@ -72,5 +72,6 @@ def parse_melody_with_antlr(input_string):
 # Bloque de ejecución principal
 if __name__ == "__main__":
     secuencia = "Si4 - Si4 - Do5 - Re5"
+    secuencia = secuencia.replace("-", " ")  # elimina guiones
     resultado = parse_melody_with_antlr(secuencia)
     print("Notas parseadas con ANTLR:", resultado)
